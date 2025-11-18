@@ -1,0 +1,79 @@
+#!/bin/bash
+#
+#
+obj_target="clusterrolebinding"
+GREEN='\033[0;32m'
+NC='\033[0m'
+config_file="/home/thinkbook/ocp-bart/ocp-bart/migrate.conf"
+
+if [[ "$#" -eq 8 ]];then
+        ocp_source="${1%/}"
+        ocp_source_user=$2
+        ocp_source_pass=$3
+        ocp_target="${4%/}"
+        ocp_target_user=$5
+        ocp_target_pass=$6
+        clusterrolebinding_param=$7
+        base_dir=${8%/}
+elif [[ $BUILDING_ARGS ]];then
+	echo "$0 ocpSourceApiURL ocpSourceUser ocpSourcePass ocpTargetApiURL ocpTargetUser ocpTargetPass clusterRoleBindingMigrate baseDir"
+	exit 0
+elif [[ ! -z "$config_file" && -f "$config_file" ]];then
+        source "$config_file"
+else
+        echo "Define \$config_file or"
+	echo "Usage: $0 ocpSourceApiURL ocpSourceUser ocpSourcePass ocpTargetApiURL ocpTargetUser ocpTargetPass clusterRoleBindingMigrate baseDir"
+	exit 1
+fi
+
+work_dir=$(echo $base_dir/backup/$obj_target)
+kube_config_source="$base_dir/.backup-kubeconfig"
+kube_config_target="$base_dir/.restore-kubeconfig"
+
+echo "Checking $obj_target"
+echo "Source: $ocp_source"
+echo "Target: $ocp_target"
+
+function verify() {
+	readarray -t obj_res < <(oc --kubeconfig $kube_config_source get $obj_target -ojson | jq -r '.items[] | select((.subjects | type == "array") and any(.subjects[]?; (type == "object") and ((.kind == "User" or .kind == "Group") and (.name | test("system:*|kube-*") | not)))) | .metadata.name')
+	if [[ "${#obj_res[@]}" -ne 0 ]];then
+		for resource in "${obj_res[@]}";do
+			echo "Checking $obj_target: $resource"
+			resource_file_name=$(echo $resource | tr ":" "_")
+			source_hash=$(oc --kubeconfig $kube_config_source get $obj_target $resource -ojson | jq -r 'del(.metadata.creationTimestamp,.metadata.resourceVersion, .metadata.uid, .status)' | sha256sum)
+			target_hash=$(oc --kubeconfig $kube_config_target get $obj_target $resource -ojson | jq -r 'del(.metadata.creationTimestamp,.metadata.resourceVersion, .metadata.uid, .status)' | sha256sum)
+			if [[ $target_hash != $source_hash ]];then
+	                        echo -e "$obj_target: $resource ${RED}does not match${NC}"
+        	        else
+                	        echo -e "$obj_target: $resource ${GREEN}match${NC}"
+	                fi
+		done
+	else
+		echo "$obj_target not found. Skipping"
+	fi
+}
+
+if [[ $clusterrolebinding_param == "true" ]];then
+        if [[ -f $kube_config_source ]];then
+                current_ocp=$(oc --kubeconfig $kube_config_source whoami --show-server)
+                current_user=$(oc --kubeconfig $kube_config_source whoami 2>/dev/null)
+                if [[ ${current_ocp%/} != ${ocp_source%/} || $current_user == "" ]];then
+                        oc login -u $ocp_source_user -p $ocp_source_pass $ocp_source --insecure-skip-tls-verify=true --kubeconfig $kube_config_source
+                fi
+        else
+                        oc login -u $ocp_source_user -p $ocp_source_pass $ocp_source --insecure-skip-tls-verify=true --kubeconfig $kube_config_source
+        fi
+
+        if [[ -f $kube_config_target ]];then
+                current_ocp=$(oc --kubeconfig $kube_config_target whoami --show-server)
+                current_user=$(oc --kubeconfig $kube_config_target whoami 2>/dev/null)
+                if [[ ${current_ocp%/} != ${ocp_target%/} || $current_user == "" ]];then
+                        oc login -u $ocp_target_user -p $ocp_target_pass $ocp_target --insecure-skip-tls-verify=true --kubeconfig $kube_config_target
+                fi
+        else
+                        oc login -u $ocp_target_user -p $ocp_target_pass $ocp_target --insecure-skip-tls-verify=true --kubeconfig $kube_config_target
+        fi
+	verify
+else
+	echo "Skipping $obj_target"
+fi
