@@ -2,7 +2,6 @@
 #
 #
 obj_target="rolebinding"
-config_file="/home/thinkbook/ocp-bart/ocp-bart/migrate.conf"
 
 if [[ "$#" -eq 6 ]];then
 	project_name=$1
@@ -14,9 +13,44 @@ if [[ "$#" -eq 6 ]];then
 elif [[ $BUILDING_ARGS ]];then
 	echo "$0 projectName ocpApiURL ocpUser ocpPass roleBindingMigrate baseDir"
 	exit 0
-
+elif [[ -z "$config_file" ]];then
+        echo "Finding migrate.conf"
+        temp_work_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+        temp_config_file="$temp_work_dir/../migrate.conf"
+        if [[ -f $temp_config_file ]];then
+                echo "migrate.conf found. Using configuration files as reference"
+                config_file=$temp_config_file
+        else
+                unset $temp_config_file
+                echo "No migrate.conf found"
+        fi
+fi
+if [[ "$#" -ne 6 && -z "$config_file" ]];then
 	echo "Usage: $0 projectName ocpApiURL ocpUser ocpPass roleBindingMigrate baseDir"
 	exit 1
+fi
+
+if [[ ! "$RUN_FROM_MAIN" ]];then
+        echo "Finding pre-flight.sh"
+        temp_pre_flight="$temp_work_dir/../pre-flight.sh"
+        if [[ -f $temp_pre_flight ]];then
+                pre_flight=$temp_pre_flight
+                script_name=$(basename "${BASH_SOURCE[0]}")
+                echo "pre-flight.sh found. Running pre-flight.sh script"
+                bash $pre_flight $script_name $config_file
+                if [[ $? -eq 0 ]];then
+                        echo "All is well"
+                        echo "Loading migrate.conf"
+                        source $config_file
+                else
+                        echo "Pre-flight failed. Aborting."
+                        exit 1
+                fi
+        else
+                unset $temp_pre_flight
+                echo "No pre-flight.sh found"
+                exit 1
+        fi
 fi
 
 kube_config="${base_dir}/.backup-kubeconfig"

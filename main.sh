@@ -1,56 +1,58 @@
 #!/bin/bash
 #
 #
-config_file="migrate.conf"
-order="clusterrolebinding project image serviceaccount secret configmap rolebinding persistentvolumeclaim replicaset deployment replicationcontroller deploymentconfig cronjob statefulset service route horizontalpodautoscaler virtualservice destinationrule serviceentry envoyfilter"
+order=(clusterrolebinding project image serviceaccount secret configmap rolebinding persistentvolumeclaim replicaset deployment replicationcontroller deploymentconfig cronjob statefulset service route horizontalpodautoscaler virtualservice destinationrule serviceentry envoyfilter)
 
-if [[ "$#" -eq 13 ]];then
-	script_mode=$1
-	project_name=$2
-	ocp_source="${3%/}"
-	ocp_source_user=$4
-	ocp_source_pass=$5
-	ocp_target="${6%/}"
-	ocp_target_user=$7
-	ocp_target_pass=$8
-	ocp_registry_source=$9
-	ocp_registry_source_token=${10}
-	ocp_registry_target=${11}
-	ocp_registry_target_token=${12}
-	base_dir=${13}
-elif [[ ! -z "$config_file" && -f "$config_file" ]];then
-	source "$config_file"
-else
-	missing=()
-	[[ -z "$script_mode" ]] && missing+=("scriptMode")
-	[[ -z "$project_name" ]] && missing+=("projectName")
-	[[ -z "$ocp_source" ]] && missing+=("ocpSourceApiURL")
-	[[ -z "$ocp_source_user" ]] && missing+=("ocpSourceUser")
-	[[ -z "$ocp_source_pass" ]] && missing+=("ocpSourcePass")
-	[[ -z "$ocp_target" ]] && missing+=("ocpTargetApiURL")
-	[[ -z "$ocp_target_user" ]] && missing+=("ocpTargetUser")
-	[[ -z "$ocp_target_pass" ]] && missing+=("ocpTargetPass")
-	[[ -z "$ocp_registry_source" ]] && missing+=("ocpRegistrySource")
-	[[ -z "$ocp_registry_source_token" ]] && missing+=("ocpTokenSource")
-	[[ -z "$ocp_registry_target" ]] && missing+=("ocpRegistryTarget")
-	[[ -z "$ocp_registry_target_token" ]] && missing+=("ocpTokenTarget")
+temp_work_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-	if [[ ${#missing[@]} -gt 0 ]]; then
-		echo "Missing required variable(s): ${missing[*]}"
-		echo "Usage: $0 scriptMode projectName ocpSourceApiURL ocpSourceUser ocpSourcePass ocpTargetApiURL ocpTargetUser ocpTargetPass ocpRegistrySource ocpTokenSource ocpRegistryTarget ocpTokenTarget baseDir"
-        exit 1
+if [[ -z "$config_file" ]];then
+        echo "Finding migrate.conf"
+        temp_config_file="$temp_work_dir/migrate.conf"
+        if [[ -f $temp_config_file ]];then
+                echo "migrate.conf found. Using configuration files as reference"
+                config_file=$temp_config_file
+                source $config_file
+        else
+                unset $temp_config_file
+                echo "No migrate.conf found"
+        fi
+fi
+
+function pre_flight() {
+	echo "Pre-flight checks from main. All variables will be examined."
+	echo "Finding pre-flight.sh"
+	temp_pre_flight="$temp_work_dir/pre-flight.sh"
+	if [[ -f $temp_pre_flight ]];then
+	        pre_flight=$temp_pre_flight
+	        echo "pre-flight.sh found."
+	else
+	        unset temp_pre_flight
+	        echo "No pre-flight.sh found"
+	        exit 1
 	fi
-fi
-
-if [[ $script_mode == "backup" ]];then
-	ocp_user=$ocp_source_user
-	ocp_pass=$ocp_source_pass
-	ocp_url=$ocp_source
-elif [[ $script_mode == "restore" ]];then
-	ocp_user=$ocp_target_user
-	ocp_pass=$ocp_target_pass
-	ocp_url=$ocp_target
-fi
+	for scripts in $(echo "${order[@]}");do
+		script=$(echo "$script_mode-${scripts}.sh")
+        	param_var="${scripts}_param"
+		if [[ -z "${!param_var+x}" ]];then
+			 echo "ERROR: Missing parameter: $param_var in migrate.conf"
+			 echo "Please set it to true or false."
+			exit 1
+		fi
+	        migrate_param=${!param_var:-}
+	        if [[ "${migrate_param}" == "true" ]];then
+			echo "Running pre-flight check for $script"
+		        bash $pre_flight $script $config_file && echo "All is well" || {
+		                echo "Pre-flight failed. Aborting."
+		                exit 1
+		        }
+		elif [[ "${migrate_param}" == "false" ]];then
+			echo "Skipping pre-flight check for $script (explicitly disabled. $param_var=$migrate_param)"
+		else
+			echo "Please set it to true or false."
+    			exit 1
+		fi
+	done
+}
 
 function construct_args() {
 	local script=$1
@@ -108,9 +110,22 @@ function construct_args() {
 	done
 }
 
+pre_flight
+
+if [[ $script_mode == "backup" ]];then
+        ocp_user=$ocp_source_user
+        ocp_pass=$ocp_source_pass
+        ocp_url=$ocp_source
+elif [[ $script_mode == "restore" ]];then
+        ocp_user=$ocp_target_user
+        ocp_pass=$ocp_target_pass
+        ocp_url=$ocp_target
+fi
+
 if [[ ! -z $projects ]];then
+export RUN_FROM_MAIN=true
 	for project_name in "${projects[@]}";do
-		for scripts in $(echo "${order}");do
+		for scripts in $(echo "${order[@]}");do
 			script=$(echo "$script_mode-script/$script_mode-${scripts}.sh")
 			construct_args $script
 			if [[ $bypass ]];then
@@ -125,7 +140,7 @@ if [[ ! -z $projects ]];then
 		done
 	done
 else
-	for scripts in $(echo "${order}");do
+	for scripts in $(echo "${order[@]}");do
 		script=$(echo "$script_mode-script/$script_mode-${scripts}.sh")
 		construct_args $script
 		if [[ $bypass ]];then
@@ -138,4 +153,6 @@ else
 			bash "$script" "${args_to_pass[@]}"
 		fi
 	done
+unset RUN_FROM_MAIN
 fi
+
