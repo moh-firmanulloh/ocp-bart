@@ -13,9 +13,19 @@ if [[ -z "$config_file" ]];then
                 config_file=$temp_config_file
                 source $config_file
         else
-                unset $temp_config_file
+                unset temp_config_file
                 echo "No migrate.conf found"
         fi
+fi
+
+if [[ $script_mode == "backup" ]];then
+        ocp_user=$ocp_source_user
+        ocp_pass=$ocp_source_pass
+        ocp_url=$ocp_source
+elif [[ $script_mode == "restore" ]];then
+        ocp_user=$ocp_target_user
+        ocp_pass=$ocp_target_pass
+        ocp_url=$ocp_target
 fi
 
 function pre_flight() {
@@ -30,12 +40,12 @@ function pre_flight() {
 	        echo "No pre-flight.sh found"
 	        exit 1
 	fi
-	for scripts in $(echo "${order[@]}");do
+	for scripts in "${order[@]}";do
 		script=$(echo "$script_mode-${scripts}.sh")
         	param_var="${scripts}_param"
 		if [[ -z "${!param_var+x}" ]];then
-			 echo "ERROR: Missing parameter: $param_var in migrate.conf"
-			 echo "Please set it to true or false."
+			echo "ERROR: Missing parameter: $param_var in migrate.conf"
+			echo "Please set it to true or false."
 			exit 1
 		fi
 	        migrate_param=${!param_var:-}
@@ -48,7 +58,8 @@ function pre_flight() {
 		elif [[ "${migrate_param}" == "false" ]];then
 			echo "Skipping pre-flight check for $script (explicitly disabled. $param_var=$migrate_param)"
 		else
-			echo "Please set it to true or false."
+			echo "ERROR: Invalid value for $param_var: '$migrate_param'"
+			echo "Must be exactly true or false."
     			exit 1
 		fi
 	done
@@ -111,16 +122,6 @@ function construct_args() {
 }
 
 pre_flight
-
-if [[ $script_mode == "backup" ]];then
-        ocp_user=$ocp_source_user
-        ocp_pass=$ocp_source_pass
-        ocp_url=$ocp_source
-elif [[ $script_mode == "restore" ]];then
-        ocp_user=$ocp_target_user
-        ocp_pass=$ocp_target_pass
-        ocp_url=$ocp_target
-fi
 
 if [[ ! -z $projects ]];then
 export RUN_FROM_MAIN=true
