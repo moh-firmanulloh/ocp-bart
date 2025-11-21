@@ -24,7 +24,7 @@ elif [[ -z "$config_file" ]];then
                 echo "migrate.conf found. Using configuration files as reference"
                 config_file=$temp_config_file
         else
-                unset $temp_config_file
+                unset temp_config_file
                 echo "No migrate.conf found"
         fi
 fi
@@ -51,7 +51,7 @@ if [[ ! "$RUN_FROM_MAIN" ]];then
                         exit 1
                 fi
         else
-                unset $temp_pre_flight
+                unset temp_pre_flight
                 echo "No pre-flight.sh found"
                 exit 1
         fi
