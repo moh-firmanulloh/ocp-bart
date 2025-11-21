@@ -18,16 +18,6 @@ if [[ -z "$config_file" ]];then
         fi
 fi
 
-if [[ $script_mode == "backup" ]];then
-        ocp_user=$ocp_source_user
-        ocp_pass=$ocp_source_pass
-        ocp_url=$ocp_source
-elif [[ $script_mode == "restore" ]];then
-        ocp_user=$ocp_target_user
-        ocp_pass=$ocp_target_pass
-        ocp_url=$ocp_target
-fi
-
 function pre_flight() {
 	echo "Pre-flight checks from main. All variables will be examined."
 	echo "Finding pre-flight.sh"
@@ -76,9 +66,6 @@ function construct_args() {
 	for arg in "${required_args[@]}";do
 		case "$arg" in
 			projectName) args_to_pass+=("$project_name") ;;
-			ocpApiURL) args_to_pass+=("$ocp_url") ;;
-			ocpUser) args_to_pass+=("$ocp_user") ;;
-			ocpPass) args_to_pass+=("$ocp_pass") ;;
 			ocpSourceApiURL) args_to_pass+=("$ocp_source") ;;
 			ocpTargetApiURL) args_to_pass+=("$ocp_target") ;;
 			ocpSourceUser) args_to_pass+=("$ocp_source_user") ;;

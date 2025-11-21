@@ -14,7 +14,7 @@ if [[ "$#" -eq 9 ]];then
 	patch_gateway=$8
 	new_gateway=$9
 elif [[ $BUILDING_ARGS ]];then
-	echo "$0 projectName ocpApiURL ocpUser ocpPass virtualServiceMigrate baseDir onlyHelm patchGateway newGateway"
+	echo "$0 projectName ocpSourceApiURL ocpSourceUser ocpSourcePass virtualServiceMigrate baseDir onlyHelm patchGateway newGateway"
 	exit 0
 elif [[ -z "$config_file" ]];then
         echo "Finding migrate.conf"
@@ -30,7 +30,7 @@ elif [[ -z "$config_file" ]];then
 fi
 if [[ "$#" -ne 9 && -z "$config_file" ]];then
         echo "Define \$config_file or"
-	echo "Usage: $0 projectName ocpApiURL ocpUser ocpPass virtualServiceMigrate baseDir onlyHelm patchGateway newGateway"
+	echo "Usage: $0 projectName ocpSourceApiURL ocpSourceUser ocpSourcePass virtualServiceMigrate baseDir onlyHelm patchGateway newGateway"
 	exit 1
 fi
 

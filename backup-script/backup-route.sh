@@ -12,7 +12,7 @@ if [[ "$#" -eq 7 ]];then
 	base_dir=$6
 	remove_cert=$7
 elif [[ $BUILDING_ARGS ]];then
-	echo "$0 projectName ocpApiURL ocpUser ocpPass routeMigrate baseDir removeTLS"
+	echo "$0 projectName ocpSourceApiURL ocpSourceUser ocpSourcePass routeMigrate baseDir removeTLS"
 	exit 0
 elif [[ -z "$config_file" ]];then
         echo "Finding migrate.conf"
@@ -28,7 +28,7 @@ elif [[ -z "$config_file" ]];then
 fi
 if [[ "$#" -ne 7 && -z "$config_file" ]];then
         echo "Define \$config_file or"
-	echo "Usage: $0 projectName ocpApiURL ocpUser ocpPass routeMigrate baseDir removeTLS"
+	echo "Usage: $0 projectName ocpSourceApiURL ocpSourceUser ocpSourcePass routeMigrate baseDir removeTLS"
 	exit 1
 fi
 

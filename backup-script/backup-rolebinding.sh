@@ -11,7 +11,7 @@ if [[ "$#" -eq 6 ]];then
 	rolebinding_param=$5
 	base_dir=$6
 elif [[ $BUILDING_ARGS ]];then
-	echo "$0 projectName ocpApiURL ocpUser ocpPass roleBindingMigrate baseDir"
+	echo "$0 projectName ocpSourceApiURL ocpSourceUser ocpSourcePass roleBindingMigrate baseDir"
 	exit 0
 elif [[ -z "$config_file" ]];then
         echo "Finding migrate.conf"
@@ -26,7 +26,7 @@ elif [[ -z "$config_file" ]];then
         fi
 fi
 if [[ "$#" -ne 6 && -z "$config_file" ]];then
-	echo "Usage: $0 projectName ocpApiURL ocpUser ocpPass roleBindingMigrate baseDir"
+	echo "Usage: $0 projectName ocpSourceApiURL ocpSourceUser ocpSourcePass roleBindingMigrate baseDir"
 	exit 1
 fi
 

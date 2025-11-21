@@ -5,16 +5,6 @@ config_file=$2
 
 source "$config_file"
 
-if [[ $script_mode == "backup" ]];then
-        ocp_user=$ocp_source_user
-        ocp_pass=$ocp_source_pass
-        ocp_url=$ocp_source
-elif [[ $script_mode == "restore" ]];then
-        ocp_user=$ocp_target_user
-        ocp_pass=$ocp_target_pass
-        ocp_url=$ocp_target
-fi
-
 function pre_flight() {
 	script_name=$1
 	script="$script_mode-script/$1"
@@ -40,21 +30,6 @@ function pre_flight() {
 	                        projectName)
 					if [[ ! -v projects ]];then
 						missing+=("project_name")
-					fi
-					;;
-	                        ocpApiURL) 
-					if [[ ! -v ocp_url ]];then
-					     missing+=("ocp_url")
-					fi   
-					;;
-	                        ocpUser) 
-					if [[ ! -v ocp_user ]];then
-					     missing+=("ocp_user")
-					fi   
-					;;
-	                        ocpPass) 
-					if [[ ! -v ocp_pass ]];then
-						missing+=("ocp_pass")
 					fi
 					;;
 	                        ocpSourceApiURL) 

@@ -11,7 +11,7 @@ if [[ "$#" -eq 6 ]];then
 	project_param=$5
 	base_dir=$6
 elif [[ $BUILDING_ARGS ]];then
-	echo "$0 projectName ocpApiURL ocpUser ocpPass projectMigrate baseDir"
+	echo "$0 projectName ocpSourceApiURL ocpSourceUser ocpSourcePass projectMigrate baseDir"
 	exit 0
 elif [[ -z "$config_file" ]];then
         echo "Finding migrate.conf"
@@ -27,7 +27,7 @@ elif [[ -z "$config_file" ]];then
 fi
 if [[ "$#" -ne 6 && -z "$config_file" ]];then
         echo "Define \$config_file or"
-	echo "Usage: $0 projectName ocpApiURL ocpUser ocpPass projectMigrate baseDir"
+	echo "Usage: $0 projectName ocpSourceApiURL ocpSourceUser ocpSourcePass projectMigrate baseDir"
 	exit 1
 fi
 

@@ -10,7 +10,7 @@ if [[ "$#" -eq 5 ]];then
 	clusterrolebinding_param=$4
 	base_dir=$5
 elif [[ $BUILDING_ARGS ]];then
-        echo "$0 ocpApiURL ocpUser ocpPass clusterRoleBindingMigrate baseDir"
+        echo "$0 ocpSourceApiURL ocpSourceUser ocpSourcePass clusterRoleBindingMigrate baseDir"
         exit 0
 elif [[ -z "$config_file" ]];then
         echo "Finding migrate.conf"
@@ -26,7 +26,7 @@ elif [[ -z "$config_file" ]];then
 fi
 if [[ "$#" -ne 5 && -z "$config_file" ]];then
         echo "Define \$config_file or"
-        echo "Usage: $0 ocpApiURL ocpUser ocpPass clusterRoleBindingMigrate baseDir"
+        echo "Usage: $0 ocpSourceApiURL ocpSourceUser ocpSourcePass clusterRoleBindingMigrate baseDir"
         exit 1
 fi
 
