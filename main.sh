@@ -104,6 +104,9 @@ function construct_args() {
 			newGateway) args_to_pass+=("$new_gateway") ;;
 			newStorageClass) args_to_pass+=("$new_storageclass") ;;
 			exportHelm) args_to_pass+=("$export_helm") ;;
+			scaleDownDeployment) args_to_pass+=("$deployment_scaledown") ;;
+			scaleDownDeploymentConfig) args_to_pass+=("$deploymentconfig_scaledown") ;;
+			suspendCronJob) args_to_pass+=("$cronjob_suspend") ;;
 		esac
 	done
 }

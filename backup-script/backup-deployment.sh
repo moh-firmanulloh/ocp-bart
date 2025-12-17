@@ -3,15 +3,16 @@
 #
 obj_target="deployment"
 
-if [[ "$#" -eq 6 ]];then
+if [[ "$#" -eq 7 ]];then
 	project_name=$1
 	ocp_source="${2%/}"
 	ocp_user=$3
 	ocp_pass=$4
 	deployment_param=$5
 	base_dir=$6
+	deployment_scaledown=$7
 elif [[ $BUILDING_ARGS ]];then
-	echo "$0 projectName ocpSourceApiURL ocpSourceUser ocpSourcePass deploymentMigrate baseDir"
+	echo "$0 projectName ocpSourceApiURL ocpSourceUser ocpSourcePass deploymentMigrate baseDir scaleDownDeployment"
 	exit 0
 elif [[ -z "$config_file" ]];then
         echo "Finding migrate.conf"
@@ -25,9 +26,9 @@ elif [[ -z "$config_file" ]];then
                 echo "No migrate.conf found"
         fi
 fi
-if [[ "$#" -ne 6 && -z "$config_file" ]];then
+if [[ "$#" -ne 7 && -z "$config_file" ]];then
 	echo "Define \$config_file or"
-	echo "Usage: $0 projectName ocpSourceApiURL ocpSourceUser ocpSourcePass deploymentMigrate baseDir"
+	echo "Usage: $0 projectName ocpSourceApiURL ocpSourceUser ocpSourcePass deploymentMigrate baseDir scaleDownDeployment"
 	exit 1
 fi
 
@@ -68,6 +69,11 @@ function backup() {
 		for resource in "${obj_res[@]}";do
 			echo "Backing up $obj_target: $resource JSON"
 	       		oc --kubeconfig $kube_config get $obj_target $resource -n $project_name -ojson | jq -r 'del(.metadata.creationTimestamp,.metadata.resourceVersion, .metadata.uid, .status)' > $work_dir/$obj_target-$resource.json
+			if [[ "$deployment_scaledown" == "true" ]];then
+				cat $work_dir/$obj_target-$resource.json | jq '.spec.replicas=0' > $work_dir/$obj_target-$resource.json-tmp
+				mv $work_dir/$obj_target-$resource.json-tmp $work_dir/$obj_target-$resource.json
+				rm -f $work_dir/$obj_target-$resource.json-tmp
+			fi
 			echo "Result path: $work_dir/$obj_target-$resource.json"
 		done
 	else

@@ -222,6 +222,21 @@ function pre_flight() {
 						missing+=("export_helm") 
 					fi
 					;;
+				scaleDownDeployment)
+					if [[ ! -v deployment_scaledown ]];then
+						missing+=("deployment_scaledown")
+					fi
+					;;
+				scaleDownDeploymentConfig)
+					if [[ ! -v deploymentconfig_scaledown ]];then
+						missing+=("deploymentconfig_scaledown")
+					fi
+					;;
+				suspendCronJob)
+					if [[ ! -v cronjob_suspend ]];then
+						missing+=("cronjob_suspend")
+					fi
+					;;
 	                esac
 	        done
 		if [[ "${#missing[@]}" -gt 0 ]];then
